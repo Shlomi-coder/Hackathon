@@ -2,7 +2,9 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from Json_To_df import load_df, fill_df_features_using_youtube_api_request
 
+RANDOM_STATE = 42
 # # Ensure these are the correct columns in your DataFrame
 # expected_columns = [
 #     "num_of_comments", "option_to_comment", "video_length", "likes",
@@ -23,8 +25,7 @@ def feature_preprocessing(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
 
 def test_train_split(X: pd.DataFrame, y: pd.Series) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     # Train/test split
-    random_state = 42
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=RANDOM_STATE, stratify=y)
     return X_train, X_test, y_train, y_test
 
 
@@ -34,7 +35,7 @@ def train_model(X_train: pd.DataFrame, y_train: pd.Series) -> xgb.XGBClassifier:
         objective='binary:logistic',
         eval_metric='logloss',
         use_label_encoder=False,
-        random_state=random_state
+        random_state=RANDOM_STATE
     )
     model.fit(X_train, y_train)
     return model
@@ -56,14 +57,18 @@ def evaluate_model(model: xgb.XGBClassifier, X_test: pd.DataFrame, y_test: pd.Se
     print(classification_report(y_test, y_pred, target_names=["Fake", "Real"]))
 
 
-    def run_modeling(df: pd.DataFrame) -> None:
+def run_modeling(df: pd.DataFrame) -> None:
     X, y = feature_preprocessing(df)
     X_train, X_test, y_train, y_test = test_train_split(X, y)
     model = train_model(X_train, y_train)
     predict_probabilities(model, X_test)
     evaluate_model(model, X_test, y_test)
+    return model
 
 
-# if __name__ == "__main__":
-#     run_modeling(json_to_pd.json_to_pd("data/train_data.json"))
-#     exit(0)
+if __name__ == "__main__":
+    df = load_df("game_labels.csv")
+    df = fill_df_features_using_youtube_api_request(df)
+    model = run_modeling(df)
+    model.save_model("model.json")
+    exit(0)
