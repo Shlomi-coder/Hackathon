@@ -3,7 +3,6 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
-
 # # Ensure these are the correct columns in your DataFrame
 # expected_columns = [
 #     "num_of_comments", "option_to_comment", "video_length", "likes",
@@ -57,7 +56,7 @@ def evaluate_model(model: xgb.XGBClassifier, X_test: pd.DataFrame, y_test: pd.Se
     print(classification_report(y_test, y_pred, target_names=["Fake", "Real"]))
 
 
-def run_modeling(df: pd.DataFrame) -> None:
+    def run_modeling(df: pd.DataFrame) -> None:
     X, y = feature_preprocessing(df)
     X_train, X_test, y_train, y_test = test_train_split(X, y)
     model = train_model(X_train, y_train)
