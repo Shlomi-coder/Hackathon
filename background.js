@@ -27,7 +27,7 @@ async function processVideoClips(tabId) {
     // Send message to content script to extract clips
     const response = await chrome.tabs.sendMessage(tabId, { action: 'extractClips' });
     console.log('Received response from content script:', response);
-    
+
     if (!response || !response.clips) {
       console.error('Invalid response from content script:', response);
       throw new Error('Failed to extract video clips');
@@ -111,4 +111,5 @@ chrome.action.onClicked.addListener(async (tab) => {
       console.error('Failed to inject note:', error);
     }
   }
-}); 
+});
+

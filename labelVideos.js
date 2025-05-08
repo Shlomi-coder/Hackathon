@@ -1,3 +1,10 @@
+// import { fetchVideoMetadata, extractVideoId } from './youtubeApi.js';
+// import { YOUTUBE_API_KEY } from './secrets.js';
+
+// Array to store video metadata
+let collectedMetadata = [];
+let hasDownloaded = false;
+
 // Function to create and style the label element
 function createLabel() {
     const label = document.createElement('div');
@@ -17,8 +24,28 @@ function createLabel() {
     return label;
 }
 
+// Function to download metadata as JSON
+function downloadMetadata() {
+    if (hasDownloaded || collectedMetadata.length === 0) return;
+    
+    const jsonData = JSON.stringify(collectedMetadata, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'video_metadata.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    hasDownloaded = true;
+    console.log('Metadata downloaded successfully');
+}
+
 // Function to process a single video card
-function processVideoCard(card) {
+async function processVideoCard(card) {
     // Skip if already processed
     if (card.querySelector('.video-classifier-label')) {
         return;
@@ -34,19 +61,48 @@ function processVideoCard(card) {
     const label = createLabel();
     label.className = 'video-classifier-label';
     metadata.parentNode.insertBefore(label, metadata.nextSibling);
+
+    // Extract video ID and collect metadata
+    const videoId = card.querySelector('a#video-title')?.href?.split('v=')[1];
+    if (videoId && collectedMetadata.length < 20) {
+        try {
+            const apiKey = window.globals.YOUTUBE_API_KEY;
+            if (!apiKey) {
+                console.error('YouTube API key not found');
+                return;
+            }
+
+            const videoMetadata = await fetchVideoMetadata(videoId, apiKey);
+            collectedMetadata.push(videoMetadata);
+            console.log(`Collected metadata for video ${videoId}`);
+
+            // If we've collected 20 videos, trigger download
+            if (collectedMetadata.length === 20) {
+                downloadMetadata();
+            }
+        } catch (error) {
+            console.error(`Error fetching metadata for video ${videoId}:`, error);
+        }
+    }
 }
 
 // Function to process all visible video cards
-function processAllVideoCards() {
+async function processAllVideoCards() {
     // Select all video card types
     const videoCards = document.querySelectorAll('ytd-video-renderer, ytd-rich-item-renderer');
-    videoCards.forEach(processVideoCard);
+    
+    // Process only the first 20 cards
+    const cardsToProcess = Array.from(videoCards).slice(0, 20);
+    
+    for (const card of cardsToProcess) {
+        await processVideoCard(card);
+    }
 }
 
 // Create a MutationObserver to watch for new videos
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length) {
+        if (mutation.addedNodes.length && !hasDownloaded) {
             processAllVideoCards();
         }
     });
@@ -59,4 +115,6 @@ observer.observe(document.body, {
 });
 
 // Process any existing videos
-processAllVideoCards(); 
+processAllVideoCards();
+
+console.log('Label Videos script loaded');
