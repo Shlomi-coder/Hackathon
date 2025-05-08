@@ -53,4 +53,8 @@ def fill_df_features_using_youtube_api_request(df: pd.DataFrame, ctx: execjs.Con
             df.at[index, 'upload_frequency'] = metadata.get('upload_frequency')
     return df
 
+def json_to_df(json_path: str) -> pd.DataFrame:
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+    return pd.DataFrame(data)
 
