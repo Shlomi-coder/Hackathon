@@ -3,9 +3,25 @@ from flask_cors import CORS
 import numpy as np
 import logging
 import traceback
+import socket
+import ssl  # Add this import at the top of your file
 
 def json_to_pd(data):
     return data
+
+def get_local_ip():
+    try:
+        # Create a socket connection to an external server
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return "127.0.0.1"  # fallback to localhost
+
+# Get the local IP address
+local_ip = get_local_ip()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -56,16 +72,21 @@ def process_array():
         }), 500
 
 if __name__ == '__main__':
-    import ssl  # Add this import at the top of your file
+    
 
     # SSL context configuration
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain('cert.pem', 'key.pem')  # Path to your certs
+    #context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    #context.load_cert_chain('cert.pem', 'key.pem')  # Path to your certs
 
-    logger.info(f"Server starting on https://{local_ip}:5000")  # Changed to HTTPS
+    logger.info("Server starting on https://localhost:5000")
+    #app.run(
+    #    host='0.0.0.0', 
+    #    port=5000, 
+    #    ssl_context=context,  # Enable HTTPS
+    #    debug=True
+    #)
     app.run(
         host='0.0.0.0', 
         port=5000, 
-        ssl_context=context,  # Enable HTTPS
-        debug=True
-    )
+        debug=True)
+    

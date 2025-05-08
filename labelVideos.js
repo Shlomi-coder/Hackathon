@@ -45,7 +45,7 @@ function downloadMetadata() {
 
     // Send the same JSON to the server endpoint
     console.log('Sending metadata to server:', jsonData);
-    fetch('https://132.68.34.159:5000/process', {
+    fetch('http://localhost:5000/process', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
