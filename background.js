@@ -2,7 +2,7 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "checkVideo",
-    title: "Check video",
+    title: "Check videos",
     contexts: ["video"]
   });
 });

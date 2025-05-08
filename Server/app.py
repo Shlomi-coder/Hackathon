@@ -102,7 +102,7 @@ def process_array_predict():
         # Make predictions
         predictions = model.predict(input_df)
         
-        return jsonify({"predictions": predictions.tolist()})
+        return jsonify(data['url'] : predictions.tolist())
     
     except Exception as e:
         error_details = traceback.format_exc()
