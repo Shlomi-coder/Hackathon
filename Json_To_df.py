@@ -1,53 +1,60 @@
 import json
 import time
 import pandas as pd
+from secrets import YOUTUBE_API_KEY
+import execjs
 
-#     "option_to_comment", "video_length",
-#     "num_of_videos_in_channel", "avg_views_per_video",
-#     "upload_frequency", "is_real"
+def load_js_file():
+    # Load the JavaScript file
+    with open('youtubeApi.js', 'r') as file:
+        js_code = file.read()
+    # Create a JavaScript context
+    ctx = execjs.compile(js_code)
+    return ctx
 
-# def json_to_pd(json_name: str) -> pd.DataFrame:
-#     with open(json_name, "r") as f:
-#         data = json.load(f)
-        
-#         # Pre-allocate lists to store data
-#         ids = []
-#         views = []
-#         likes = []
-#         comment_counts = []
-#         vid_length = []
-        
-#         # Collect data in lists
-#         for video in data["items"]:
-#             ids.append(video['id'])
-#             views.append(video['statistics']['viewCount'])
-#             likes.append(video['statistics']['likeCount'])
-#             comment_counts.append(video['statistics']['commentCount'])
-#             vid_length.append(video['contentDetails']['duration'])
 
-        
-#         # Create DataFrame once with all data
-#         df = pd.DataFrame({
-#             'id': ids,
-#             'views': views,
-#             'likes': likes,
-#             'num_of_comments': comment_counts,
-#             'video_length': vid_length,
-#         })
-        
-#         # Calculate derived columns once
-#         df['likes_views_ratio'] = df['likes'].astype(float) / df['views'].astype(float)
-#         df['channel_age'] = time.time() - pd.to_datetime(df['published_at']).astype(int) // 10**9
-#         df['is_real'] = 1
-#         df['option_to_comment'] = (df['num_of_comments'] > 0).astype(int)
-        
-#         # Set index once at the end
-#         df.set_index('id', inplace=True)
-#         return df
+def load_df(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path)
+    ctx = load_js_file()
+    fill_df_features_using_youtube_api_request(df, ctx)
+    return df
 
-def json_to_df(json_name: str) -> pd.DataFrame:
-    with open(json_name, "r") as f:
-        data = json.load(f)
+def fill_df_features_using_youtube_api_request(df: pd.DataFrame, ctx: execjs.Context) -> pd.DataFrame:
+    """
+    Fill DataFrame features using YouTube API metadata.
+    
+    Args:
+        df (pd.DataFrame): Input DataFrame containing YouTube URLs
+        
+    Returns:
+        pd.DataFrame: DataFrame with added YouTube metadata features
+    """
+    
+    # Process each row
+    for index, row in df.iterrows():
+            # Extract video ID from URL
+            video_id = ctx.call('extractVideoId', row['url'])
+            if not video_id:
+                continue
+                
+            # Fetch video metadata using YouTube API
+            metadata = ctx.call('fetchVideoMetadata', video_id, YOUTUBE_API_KEY)
+            
+            # Update DataFrame with metadata
+            df.at[index, 'video_url'] = metadata.get('video_url')
+            df.at[index, 'option_to_comment'] = metadata.get('option_to_comment')
+            df.at[index, 'video_length'] = metadata.get('video_length')
+            df.at[index, 'likes'] = metadata.get('likes')
+            df.at[index, 'views'] = metadata.get('views')
+            df.at[index, 'likes_views_ratio'] = metadata.get('likes_views_ratio')
+            df.at[index, 'channel_age'] = metadata.get('channel_age')
+            df.at[index, 'number_of_videos'] = metadata.get('number_of_videos')
+            df.at[index, 'avg_views_per_video'] = metadata.get('avg_views_per_video')
+            df.at[index, 'upload_frequency'] = metadata.get('upload_frequency')
+    return df
+
+def json_to_df(json_path: str) -> pd.DataFrame:
+    with open(json_path, 'r') as file:
+        data = json.load(file)
     return pd.DataFrame(data)
-
 

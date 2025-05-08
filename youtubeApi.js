@@ -116,6 +116,7 @@ async function fetchVideoMetadata(videoId, apiKey) {
 
         // Return structured data
         const result = {
+            video_url: `https://www.youtube.com/watch?v=${videoId}`,
             option_to_comment: hasComments,
             video_length: parseDuration(video.contentDetails.duration),
             likes,
@@ -132,6 +133,7 @@ async function fetchVideoMetadata(videoId, apiKey) {
         console.error('Error fetching video metadata:', error);
         return {
             error: error.message,
+            video_url: null,
             option_to_comment: null,
             video_length: null,
             likes: null,
