@@ -2,6 +2,7 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+import json_to_pd
 
 def read_df(csv_name: str) -> pd.DataFrame:
     # Sample DataFrame placeholder (replace with your actual data)
@@ -66,9 +67,10 @@ def run_modeling(name: str) -> None:
     X, y = feature_preprocessing(df)
     X_train, X_test, y_train, y_test = test_train_split(X, y)
     model = train_model(X_train, y_train)
-    proba = predict_probabilities(model, X_test)
+    predict_probabilities(model, X_test)
     evaluate_model(model, X_test, y_test)
 
 
 if __name__ == "__main__":
     run_modeling("data/train_data.csv")
+    exit(0)
