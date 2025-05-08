@@ -37,20 +37,20 @@ function calculateUploadFrequency(channelStats) {
 // Main function to fetch video metadata
 async function fetchVideoMetadata(videoId, apiKey) {
   try {
-    // Fetch video details
-    const videoResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?` +
-      `part=contentDetails,statistics,status&` +
-      `id=${videoId}&` +
-      `key=${apiKey}`
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,contentDetails,statistics,status`
     );
-    const videoData = await videoResponse.json();
-
-    if (!videoData.items || videoData.items.length === 0) {
-      throw new Error('Video not found');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) {
+      throw new Error('No video data found');
     }
 
-    const video = videoData.items[0];
+    const video = data.items[0];
     const channelId = video.snippet.channelId;
 
     // Fetch channel details
@@ -84,12 +84,12 @@ async function fetchVideoMetadata(videoId, apiKey) {
 
     // Return structured data
     return {
-      option_to_comment: video.status.privacyStatus !== 'private',
+      option_to_comment: video.status.privacyStatus === 'public',
       video_length: parseDuration(video.contentDetails.duration),
       likes,
       dislikes,
       likes_dislikes_ratio: likesDislikesRatio,
-      channel_age: new Date(channel.snippet.publishedAt).toISOString(),
+      channel_age: video.snippet.publishedAt,
       number_of_videos: channelStats.videoCount,
       avg_views_per_video: Math.round(avgViewsPerVideo),
       upload_frequency: calculateUploadFrequency(channelStats)
