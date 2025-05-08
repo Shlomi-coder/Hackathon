@@ -2,12 +2,7 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-import json_to_pd
 
-def read_df(csv_name: str) -> pd.DataFrame:
-    # Sample DataFrame placeholder (replace with your actual data)
-    df = pd.read_csv(csv_name)
-    return df
 
 # # Ensure these are the correct columns in your DataFrame
 # expected_columns = [
@@ -62,8 +57,7 @@ def evaluate_model(model: xgb.XGBClassifier, X_test: pd.DataFrame, y_test: pd.Se
     print(classification_report(y_test, y_pred, target_names=["Fake", "Real"]))
 
 
-def run_modeling(name: str) -> None:
-    df = read_df(name)
+def run_modeling(df: pd.DataFrame) -> None:
     X, y = feature_preprocessing(df)
     X_train, X_test, y_train, y_test = test_train_split(X, y)
     model = train_model(X_train, y_train)
@@ -71,6 +65,6 @@ def run_modeling(name: str) -> None:
     evaluate_model(model, X_test, y_test)
 
 
-if __name__ == "__main__":
-    run_modeling("data/train_data.csv")
-    exit(0)
+# if __name__ == "__main__":
+#     run_modeling(json_to_pd.json_to_pd("data/train_data.json"))
+#     exit(0)
