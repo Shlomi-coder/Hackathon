@@ -42,6 +42,23 @@ function downloadMetadata() {
     
     hasDownloaded = true;
     console.log('Metadata downloaded successfully');
+
+    // Send the same JSON to the server endpoint
+    console.log('Sending metadata to server:', jsonData);
+    fetch('http://localhost:5000/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: jsonData
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Server response:', data);
+    })
+    .catch(error => {
+      console.error('Error sending metadata to server:', error);
+    });
 }
 
 // Function to process a single video card
@@ -64,7 +81,7 @@ async function processVideoCard(card) {
 
     // Extract video ID and collect metadata
     const videoId = card.querySelector('a#video-title')?.href?.split('v=')[1];
-    if (videoId && collectedMetadata.length < 10) {
+    if (videoId && collectedMetadata.length < 20) {
         try {
             const apiKey = window.globals.YOUTUBE_API_KEY;
             if (!apiKey) {
@@ -76,9 +93,11 @@ async function processVideoCard(card) {
             collectedMetadata.push(videoMetadata);
             console.log(`Collected metadata for video ${videoId}`);
 
-            // If we've collected 10 videos, trigger download
-            if (collectedMetadata.length === 10) {
+            // If we've collected 20 videos, trigger download
+            if (collectedMetadata.length === 20) {
                 downloadMetadata();
+            } else {
+              console.log('Collected metadata:', collectedMetadata.length);
             }
         } catch (error) {
             console.error(`Error fetching metadata for video ${videoId}:`, error);
@@ -91,8 +110,8 @@ async function processAllVideoCards() {
     // Select all video card types
     const videoCards = document.querySelectorAll('ytd-video-renderer, ytd-rich-item-renderer');
     
-    // Process only the first 10 cards
-    const cardsToProcess = Array.from(videoCards).slice(0, 10);
+    // Process only the first 20 cards
+    const cardsToProcess = Array.from(videoCards).slice(0, 20);
     
     for (const card of cardsToProcess) {
         await processVideoCard(card);
