@@ -1,4 +1,7 @@
 // Helper function to extract videoId from YouTube URL
+const https = require('https');
+const http = require('http');
+
 function extractVideoId(url) {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
@@ -42,38 +45,42 @@ function calculateChannelAge(channelCreationDate) {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convert to days
 }
 
-// Main function to fetch video metadata
-async function fetchVideoMetadata(videoId, apiKey) {
+
+// Helper function to make synchronous HTTP request
+function makeRequest(url) {
+    return new Promise((resolve, reject) => {
+        const protocol = url.startsWith('https') ? https : http;
+        protocol.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                resolve(JSON.parse(data));
+            });
+        }).on('error', (err) => {
+            reject(err);
+        });
+    });
+}
+
+// Modify fetchVideoMetadata to be synchronous
+function fetchVideoMetadata(videoId, apiKey) {
     try {
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,contentDetails,statistics,status`
-        );
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('YouTube API Response:', data); // Debug logging
+        // Make synchronous request for video data
+        const videoUrl = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${apiKey}&part=snippet,contentDetails,statistics,status`;
+        const data = makeRequest(videoUrl);
 
         if (!data.items || data.items.length === 0) {
             throw new Error('No video data found');
         }
 
         const video = data.items[0];
-        console.log('Video data:', video); // Debug logging
-
         const channelId = video.snippet.channelId;
 
-        // Fetch channel details
-        const channelResponse = await fetch(
-            `https://www.googleapis.com/youtube/v3/channels?` +
-            `part=statistics,snippet&` +
-            `id=${channelId}&` +
-            `key=${apiKey}`
-        );
-        const channelData = await channelResponse.json();
-        console.log('Channel API Response:', channelData); // Debug logging
+        // Make synchronous request for channel data
+        const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${channelId}&key=${apiKey}`;
+        const channelData = makeRequest(channelUrl);
 
         if (!channelData.items || channelData.items.length === 0) {
             throw new Error('Channel not found');
@@ -95,27 +102,18 @@ async function fetchVideoMetadata(videoId, apiKey) {
             ? channelStats.viewCount / channelStats.videoCount 
             : 0;
 
-        // Check if comments are allowed by making a request to commentThreads endpoint
+        // Check comments status
         let hasComments = false;
         try {
-            const commentsResponse = await fetch(
-                `https://www.googleapis.com/youtube/v3/commentThreads?part=id&videoId=${videoId}&key=${apiKey}&maxResults=1`
-            );
-            
-            if (commentsResponse.ok) {
-                hasComments = true;
-            } else if (commentsResponse.status === 403) {
-                const errorData = await commentsResponse.json();
-                hasComments = !errorData.error?.errors?.some(error => error.reason === 'commentsDisabled');
-            }
+            const commentsUrl = `https://www.googleapis.com/youtube/v3/commentThreads?part=id&videoId=${videoId}&key=${apiKey}&maxResults=1`;
+            const commentsData = makeRequest(commentsUrl);
+            hasComments = true;
         } catch (error) {
-            console.warn('Error checking comment status:', error);
-            // If we can't determine comment status, default to false
             hasComments = false;
         }
 
         // Return structured data
-        const result = {
+        return {
             video_url: `https://www.youtube.com/watch?v=${videoId}`,
             option_to_comment: hasComments,
             video_length: parseDuration(video.contentDetails.duration),
@@ -127,8 +125,6 @@ async function fetchVideoMetadata(videoId, apiKey) {
             avg_views_per_video: Math.round(avgViewsPerVideo),
             upload_frequency: calculateUploadFrequency(channelStats)
         };
-        console.log('Processed result:', result); // Debug logging
-        return result;
     } catch (error) {
         console.error('Error fetching video metadata:', error);
         return {
@@ -146,11 +142,5 @@ async function fetchVideoMetadata(videoId, apiKey) {
         };
     }
 }
-
-// Export functions
-// export {
-//   extractVideoId,
-//   fetchVideoMetadata
-// }; 
 
 console.log('Youtube API script loaded');

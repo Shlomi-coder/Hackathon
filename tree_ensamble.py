@@ -68,7 +68,7 @@ def run_modeling(df: pd.DataFrame) -> None:
 
 
 if __name__ == "__main__":
-    df = load_df("game_labels.csv")
+    df = load_df("videos_labeled.csv")
     df = fill_df_features_using_youtube_api_request(df)
     model = run_modeling(df)
     joblib.dump(model, 'model.joblib')

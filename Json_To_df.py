@@ -1,8 +1,10 @@
 import json
 import time
 import pandas as pd
-from secrets import YOUTUBE_API_KEY
 import execjs
+
+
+YOUTUBE_API_KEY = 'AIzaSyAoFORBdODQSoHkK8p0s8mQFBwMZchUWAU'
 
 def load_js_file():
     # Load the JavaScript file
@@ -19,19 +21,13 @@ def load_df(csv_path: str) -> pd.DataFrame:
     fill_df_features_using_youtube_api_request(df, ctx)
     return df
 
-def fill_df_features_using_youtube_api_request(df: pd.DataFrame, ctx: execjs.Context) -> pd.DataFrame:
+def fill_df_features_using_youtube_api_request(df: pd.DataFrame, ctx: execjs) -> pd.DataFrame:
     """
     Fill DataFrame features using YouTube API metadata.
-    
-    Args:
-        df (pd.DataFrame): Input DataFrame containing YouTube URLs
-        
-    Returns:
-        pd.DataFrame: DataFrame with added YouTube metadata features
     """
-    
     # Process each row
     for index, row in df.iterrows():
+        try:
             # Extract video ID from URL
             video_id = ctx.call('extractVideoId', row['url'])
             if not video_id:
@@ -51,7 +47,16 @@ def fill_df_features_using_youtube_api_request(df: pd.DataFrame, ctx: execjs.Con
             df.at[index, 'number_of_videos'] = metadata.get('number_of_videos')
             df.at[index, 'avg_views_per_video'] = metadata.get('avg_views_per_video')
             df.at[index, 'upload_frequency'] = metadata.get('upload_frequency')
+            
+            # Add a small delay to avoid hitting API rate limits
+            time.sleep(0.5)
+            
+        except Exception as e:
+            print(f"Error processing row {index}: {str(e)}")
+            continue
+            
     return df
+
 
 def json_to_df(json_path: str) -> pd.DataFrame:
     with open(json_path, 'r') as file:
