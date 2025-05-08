@@ -5,8 +5,22 @@ import logging
 import traceback
 import socket
 import ssl  # Add this import at the top of your file
+import joblib
 
-def json_to_pd(data):
+
+def load_model(model_path):
+    """
+    Load model directly from file
+    """
+    try:
+        model = joblib.load(model_path)
+        return model
+    except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
+        raise ValueError(f"Invalid model file: {str(e)}")
+    
+
+def json_to_df(data):
     return data
 
 def get_local_ip():
@@ -58,8 +72,8 @@ def process_array():
         if not data:
             return jsonify({"error": "No data provided"}), 400
         
-        input_pd = json_to_pd(data)
-        result = input_pd
+        input_df = json_to_df(data)
+        result = input_df
         logger.info(f"Processing data: {result}")
         return jsonify(result)
     
@@ -70,10 +84,35 @@ def process_array():
             "error": str(e),
             "details": error_details
         }), 500
-
-if __name__ == '__main__':
     
 
+@app.route('/process', methods=['POST'])
+def process_array_predict():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Convert data to DataFrame
+        input_df = json_to_df(data)
+        
+        # Load model from file
+        model = load_model('model.joblib')  # or .joblib
+        
+        # Make predictions
+        predictions = model.predict(input_df)
+        
+        return jsonify({"predictions": predictions.tolist()})
+    
+    except Exception as e:
+        error_details = traceback.format_exc()
+        logger.error(f"Error processing request: {str(e)}\n{error_details}")
+        return jsonify({
+            "error": str(e),
+            "details": error_details
+        }), 500
+
+if __name__ == '__main__':
     # SSL context configuration
     #context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     #context.load_cert_chain('cert.pem', 'key.pem')  # Path to your certs

@@ -3,6 +3,7 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from Json_To_df import load_df, fill_df_features_using_youtube_api_request
+import joblib
 
 RANDOM_STATE = 42
 # # Ensure these are the correct columns in your DataFrame
@@ -70,5 +71,5 @@ if __name__ == "__main__":
     df = load_df("game_labels.csv")
     df = fill_df_features_using_youtube_api_request(df)
     model = run_modeling(df)
-    model.save_model("model.json")
+    joblib.dump(model, 'model.joblib')
     exit(0)
