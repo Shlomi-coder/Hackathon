@@ -1,5 +1,5 @@
 // YouTube API Configuration
-const YOUTUBE_API_KEY = 'AIzaSyAoFORBdODQSoHkK8p0s8mQFBwMZchUWAU';
+const YOUTUBE_API_KEY = 'PUT YOUR API KEY HERE';
 
 window.globals ??= {};
 window.globals.YOUTUBE_API_KEY = YOUTUBE_API_KEY;
